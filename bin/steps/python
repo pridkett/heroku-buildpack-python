@@ -1,4 +1,4 @@
-set +e
+set +eu
 PYTHON_VERSION=$(cat runtime.txt)
 
 # Install Python.
@@ -28,10 +28,9 @@ if [ ! "$SKIP_INSTALL" ]; then
     # Prepare destination directory.
     mkdir -p .heroku/python
 
-    curl https://lang-python.s3.amazonaws.com/$STACK/runtimes/$PYTHON_VERSION.tar.gz -s | tar zxv -C .heroku/python &> /dev/null
+    curl `translate_dependency_url https://lang-python.s3.amazonaws.com/$STACK/runtimes/$PYTHON_VERSION.tar.gz` -s | tar zxv -C .heroku/python &> /dev/null
     if [[ $? != 0 ]] ; then
-      puts-warn "Requested runtime ($PYTHON_VERSION) is not available for this stack ($STACK)."
-      puts-warn "Aborting.  More info: https://devcenter.heroku.com/articles/python-support"
+      puts-warn "Resource https://lang-python.s3.amazonaws.com/$STACK/runtimes/$PYTHON_VERSION.tar.gz is not provided by this buildpack. Please upgrade your buildpack to receive the latest resources."
       exit 1
     fi
 
@@ -74,5 +73,5 @@ if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
   bpwatch stop prepare_environment
 fi
 
-set -e
+set -eu
 hash -r

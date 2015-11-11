@@ -1,52 +1,80 @@
-# Heroku buildpack: Python
-![python-banner](https://cloud.githubusercontent.com/assets/51578/8914205/ecf2047c-346b-11e5-98c5-42547f9f4410.jpg)
+# Cloud Foundry buildpack: Python
 
-This is a [Heroku buildpack](http://devcenter.heroku.com/articles/buildpacks) for Python apps, powered by [pip](http://www.pip-installer.org/).
+A Cloud Foundry [buildpack](http://docs.cloudfoundry.org/buildpacks/) for Python based apps.
 
+This is based on the [Heroku buildpack] (https://github.com/heroku/heroku-buildpack-python).
 
-Usage
------
+Additional information can be found at [CloudFoundry.org](http://docs.cloudfoundry.org/buildpacks/).
 
-Example usage:
+## Usage
 
-    $ ls
-    Procfile  requirements.txt  web.py
+This buildpack will be used if there is a `requirements.txt` or `setup.py` file in the root directory of your project.
 
-    $ heroku create --buildpack git://github.com/heroku/heroku-buildpack-python.git
+```bash
+cf push my_app -b https://github.com/cloudfoundry/buildpack-python.git
+```
 
-    $ git push heroku master
-    ...
-    -----> Python app detected
-    -----> Installing runtime (python-2.7.10)
-    -----> Installing dependencies using pip
-           Downloading/unpacking requests (from -r requirements.txt (line 1))
-           Installing collected packages: requests
-           Successfully installed requests
-           Cleaning up...
-    -----> Discovering process types
-           Procfile declares types -> (none)
+## Disconnected environments
+To use this buildpack on Cloud Foundry, where the Cloud Foundry instance limits some or all internet activity, please read the [Disconnected Environments documentation](https://github.com/cf-buildpacks/buildpack-packager/blob/master/doc/disconnected_environments.md).
 
-You can also add it to upcoming builds of an existing application:
+### Vendoring app dependencies
+As stated in the [Disconnected Environments documentation](https://github.com/cf-buildpacks/buildpack-packager/blob/master/doc/disconnected_environments.md), your application must 'vendor' it's dependencies.
 
-    $ heroku buildpacks:set git://github.com/heroku/heroku-buildpack-python.git
+For the Python buildpack, use ```pip```:
 
-The buildpack will detect your app as Python if it has the file `requirements.txt` in the root.
+```shell 
+cd <your app dir>
+mkdir -p vendor
 
-It will use Pip to install your dependencies, vendoring a copy of the Python runtime into your slug.
+# vendors all the pip *.tar.gz into vendor/
+pip install --download vendor -r requirements.txt
+```
 
-Specify a Runtime
------------------
+```cf push``` uploads your vendored dependencies. The buildpack will install them directly from the `vendor/`.
 
-You can also provide arbitrary releases Python with a `runtime.txt` file.
+## Building
 
-    $ cat runtime.txt
-    python-3.5.0
+The buildpack only supports the two most stable patches for each dependency in the [manifest.yml](manifest.yml).
 
-Runtime options include:
+1. Make sure you have fetched submodules
 
-- python-2.7.10
-- python-3.5.0
-- pypy-2.6.1 (unsupported, experimental)
-- pypy3-2.4.0 (unsupported, experimental)
+  ```bash
+  git submodule update --init
+  ```
 
-Other [unsupported runtimes](https://github.com/heroku/heroku-buildpack-python/tree/master/builds/runtimes) are available as well.
+1. Get latest buildpack dependencies
+
+  ```shell
+  BUNDLE_GEMFILE=cf.Gemfile bundle
+  ```
+
+1. Build the buildpack
+
+  ```shell
+  BUNDLE_GEMFILE=cf.Gemfile bundle exec buildpack-packager [ --uncached | --cached ]
+  ```
+
+1. Use in Cloud Foundry
+
+    Upload the buildpack to your Cloud Foundry and optionally specify it by name
+        
+    ```bash
+    cf create-buildpack custom_python_buildpack python_buildpack-cached-custom.zip 1
+    cf push my_app -b custom_python_buildpack
+    ```  
+
+### Deprecated Versions
+
+If you would like to build the buildpack with previously supported dependency versions, provide the `--use-custom-manifest=manifest-including-unsupported.yml` option to `buildpack-packager`.
+
+## Contributing
+
+Find our guidelines [here](./CONTRIBUTING.md).
+
+## Reporting Issues
+
+Open a GitHub issue on this project at https://github.com/cloudfoundry/python-buildpack/issues/new
+
+## Active Development
+
+The project backlog is on [Pivotal Tracker](https://www.pivotaltracker.com/projects/1042066)

@@ -1,2 +1,7 @@
 *.pyc
 site
+.idea
+log/
+**/.DS_Store
+/python_buildpack-*.zip
+.bundle/
